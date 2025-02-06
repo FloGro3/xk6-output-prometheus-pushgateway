@@ -1,7 +1,7 @@
 package pushgateway
 
 import (
-	"github.com/martymarron/xk6-output-prometheus-pushgateway/pkg/pushgateway"
+	"github.com/FloGro3/xk6-output-prometheus-pushgateway/pkg/pushgateway"
 
 	"go.k6.io/k6/output"
 )

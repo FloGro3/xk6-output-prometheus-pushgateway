@@ -1,4 +1,4 @@
-module github.com/martymarron/xk6-output-prometheus-pushgateway
+module github.com/FloGro3/xk6-output-prometheus-pushgateway
 
 go 1.22.0
 

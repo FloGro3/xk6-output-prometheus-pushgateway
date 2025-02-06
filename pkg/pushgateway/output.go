@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	collector_resolver "github.com/martymarron/xk6-output-prometheus-pushgateway/pkg/pushgateway/collector_resolver"
+	collector_resolver "github.com/FloGro3/xk6-output-prometheus-pushgateway/pkg/pushgateway/collector_resolver"
 
 	"github.com/sirupsen/logrus"
 

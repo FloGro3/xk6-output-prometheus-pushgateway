@@ -3,7 +3,7 @@ package pushgateway_test
 import (
 	"testing"
 
-	"github.com/martymarron/xk6-output-prometheus-pushgateway/pkg/pushgateway"
+	"github.com/FloGro3/xk6-output-prometheus-pushgateway/pkg/pushgateway"
 	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/output"
 )
