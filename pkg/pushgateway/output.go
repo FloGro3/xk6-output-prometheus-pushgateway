@@ -83,8 +83,7 @@ func (o *Output) flushMetrics() {
 
 		sampleMap := extractPushSamples(sampleContainers)
 		o.logger.WithFields(dumpk6Sample(sampleMap)).Debug("Dump k6 samples.")
-		labels := o.GetLabels()
-		collectors := convertk6SamplesToPromCollectors(sampleMap, labels, o.config.Namespace)
+		collectors := convertk6SamplesToPromCollectors(sampleMap, o.config.Namespace)
 
 		registry := prometheus.NewPedanticRegistry()
 		registry.MustRegister(collectors...)
@@ -113,11 +112,15 @@ func extractPushSamples(sampleContainers []metrics.SampleContainer) map[string]m
 	return sampleMap
 }
 
-func convertk6SamplesToPromCollectors(samplesMap map[string]metrics.Sample, labels prometheus.Labels, prefix string) []prometheus.Collector {
+func convertk6SamplesToPromCollectors(samplesMap map[string]metrics.Sample, prefix string) []prometheus.Collector {
 	collectors := make([]prometheus.Collector, 0)
 	for _, sample := range samplesMap {
 		resolver := collector_resolver.CreateResolver(sample.Metric.Type)
-		collectors = append(collectors, resolver(sample, labels, prefix)...)
+		tag := make(map[string]string)
+		if (sample.GetTags() != nil) {
+			tag = sample.GetTags().Map()
+		}
+		collectors = append(collectors, resolver(sample, tag, prefix)...)
 	}
 	return collectors
 }
