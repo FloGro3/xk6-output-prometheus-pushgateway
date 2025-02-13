@@ -12,18 +12,22 @@ import (
 )
 
 const (
-	defaultPushGWUrl    = "http://localhost:9091"
-	defaultPushInterval = 10 * time.Second
-	defaultJobName      = "k6_load_testing"
-	defaultNamespace    = ""
+	defaultPushGWUrl    		= "http://localhost:9091"
+	defaultPushInterval 		= 5 * time.Second
+	defaultJobName      		= "k6_load_testing"
+	defaultNamespace    		= ""
+)
+
+var (
+	defaultLabelSegregation 	= []string{"scenario"}
 )
 
 // Config is the config for the template collector
 type Config struct {
-	JobName      string
-	Labels       map[string]string
-	PushGWUrl    string
-	PushInterval time.Duration
+	JobName      		string
+	PushGWUrl    		string
+	PushInterval 		time.Duration
+	LabelSegregation 	[]string
 
 	// Used to prefix all tags with a custom namespace
 	Namespace string
@@ -32,15 +36,15 @@ type Config struct {
 // NewConfig creates a new Config instance from the provided output.Params
 func NewConfig(p output.Params) (Config, error) {
 	cfg := Config{
-		JobName:      defaultJobName,
-		Labels:       map[string]string{},
-		PushGWUrl:    defaultPushGWUrl,
-		PushInterval: defaultPushInterval,
-		Namespace:    defaultNamespace,
+		JobName:      		defaultJobName,
+		PushGWUrl:    		defaultPushGWUrl,
+		PushInterval: 		defaultPushInterval,
+		Namespace:    		defaultNamespace,
+		LabelSegregation: 	defaultLabelSegregation,
 	}
 
 	if val, ok := p.ScriptOptions.External["pushgateway"]; ok {
-		err := json.Unmarshal(val, &cfg.Labels)
+		err := json.Unmarshal(val, &cfg.LabelSegregation)
 		if err != nil {
 			j, err := json.Marshal(&val)
 			if err != nil {
@@ -51,7 +55,7 @@ func NewConfig(p output.Params) (Config, error) {
 			}
 
 		}
-		p.Logger.Debugf("Pushgateway labels from JSON options.ext.pushgateway dictionary %+v", cfg.Labels)
+		p.Logger.Debugf("Pushgateway labels from JSON options.ext.pushgateway dictionary %+v", cfg.LabelSegregation)
 	}
 
 	for k, v := range p.Environment {
@@ -68,12 +72,10 @@ func NewConfig(p output.Params) (Config, error) {
 			cfg.Namespace = v
 		case "K6_JOB_NAME":
 			cfg.JobName = v
-		}
-		if strings.HasPrefix(k, "K6_LABEL_") {
-			key := strings.ToLower(k[9:])
-			cfg.Labels[key] = strings.ToLower(v)
+		case "K6_LABEL_SEGREGATION":
+			cfg.LabelSegregation = append(cfg.LabelSegregation, strings.ToLower(v))
 		}
 	}
-	p.Logger.Debugf("Pushgateway labels %+v", cfg.Labels)
+	p.Logger.Debugf("Pushgateway labels %+v", cfg.LabelSegregation)
 	return cfg, nil
 }

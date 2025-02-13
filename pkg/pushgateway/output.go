@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"strings"
 
 	collector_resolver "github.com/FloGro3/xk6-output-prometheus-pushgateway/pkg/pushgateway/collector_resolver"
 
@@ -42,7 +43,7 @@ func New(p output.Params) (*Output, error) {
 }
 
 func (o *Output) Description() string {
-	return fmt.Sprintf("pushgateway: %s, job: %s, labels: %s", o.config.PushGWUrl, o.config.JobName, o.config.Labels)
+	return fmt.Sprintf("pushgateway: %s, job: %s, labels: %s", o.config.PushGWUrl, o.config.JobName, o.config.LabelSegregation)
 }
 
 func (o *Output) Stop() error {
@@ -69,67 +70,59 @@ func (o *Output) Start() error {
 	return nil
 }
 
-// GetLabels gets labels from the Config
-func (o *Output) GetLabels() prometheus.Labels {
-	return o.config.Labels
-}
-
 func (o *Output) flushMetrics() {
-	sampleContainers := o.GetBufferedSamples()
+	samplesContainers := o.GetBufferedSamples()
 
 	o.waitGroup.Add(1)
 	go func() {
 		defer o.waitGroup.Done()
 
-		sampleMap := extractPushSamples(sampleContainers)
-		o.logger.WithFields(dumpk6Sample(sampleMap)).Debug("Dump k6 samples.")
-		collectors := convertk6SamplesToPromCollectors(sampleMap, o.config.Namespace)
+		//sampleMap := extractPushSamples(sampleContainers)
+		for _, samplesContainer := range samplesContainers {
+			samples := samplesContainer.GetSamples()
 
-		registry := prometheus.NewPedanticRegistry()
-		registry.MustRegister(collectors...)
-		o.logger.WithFields(dumpPrometheusCollector(registry)).Debug("Dump collectors.")
+			o.logger.WithFields(dumpk6Sample(samples)).Debug("Dump k6 samples.")
+			collectors := convertk6SamplesToPromCollectors(o, samples, o.config.Namespace)
 
-		pusher := push.New(o.config.PushGWUrl, o.config.JobName)
-		if err := pusher.Gatherer(registry).Add(); err != nil {
-			o.logger.
-				Errorf("Could not add to Pushgateway: %v", err)
+			registry := prometheus.NewPedanticRegistry()
+			registry.MustRegister(collectors...)
+			o.logger.WithFields(dumpPrometheusCollector(registry)).Debug("Dump collectors.")
+
+			pusher := push.New(o.config.PushGWUrl, o.config.JobName)
+			instance := ""
+			//get job_name tag from sample (should be same accross all samples) as instance grouping value
+			for _, value := range samples {
+				tagSet := value.GetTags()
+				if (tagSet != nil) {
+					if tag, exists := tagSet.Get("job_name"); exists {
+						instance = tag
+						break
+					}
+				}
+			}
+			if err := pusher.Gatherer(registry).Grouping("instance", instance).Add(); err != nil {
+				o.logger.
+					Errorf("Could not add to Pushgateway: %v", err)
+			}
 		}
 	}()
 }
 
-func extractPushSamples(sampleContainers []metrics.SampleContainer) map[string]metrics.Sample {
-	// To avoid duplicated metric registration,
-	// store metric name and its value as a map,
-	// and overwrite the value by the latest one.
-	sampleMap := make(map[string]metrics.Sample)
-	for _, sampleContainer := range sampleContainers {
-		samples := sampleContainer.GetSamples()
-		for _, sample := range samples {
-			key := sample.Metric.Name
-			sampleMap[key] = sample
-		}
-	}
-	return sampleMap
-}
-
-func convertk6SamplesToPromCollectors(samplesMap map[string]metrics.Sample, prefix string) []prometheus.Collector {
+func convertk6SamplesToPromCollectors(o *Output, samples []metrics.Sample, prefix string) []prometheus.Collector {
 	collectors := make([]prometheus.Collector, 0)
-	for _, sample := range samplesMap {
+	for _, sample := range samples {
 		resolver := collector_resolver.CreateResolver(sample.Metric.Type)
-		tag := make(map[string]string)
-		if (sample.GetTags() != nil) {
-			tag = sample.GetTags().Map()
-		}
-		collectors = append(collectors, resolver(sample, tag, prefix)...)
+		subsystem := getSubsystem(o, sample)
+		collectors = append(collectors, resolver(sample, subsystem, prefix)...)
 	}
 	return collectors
 }
 
-func dumpk6Sample(samplesMap map[string]metrics.Sample) logrus.Fields {
+func dumpk6Sample(samples []metrics.Sample) logrus.Fields {
 	var value float64
 	t := time.Since(time.Now())
 	fields := logrus.Fields{}
-	for _, sample := range samplesMap {
+	for _, sample := range samples {
 		switch sample.Metric.Type {
 		case metrics.Counter:
 			value = sample.Metric.Sink.Format(t)["count"]
@@ -155,4 +148,19 @@ func dumpPrometheusCollector(reg *prometheus.Registry) logrus.Fields {
 		fields[metricFamily.GetName()] = metricFamily.String()
 	}
 	return fields
+}
+
+func getSubsystem(o *Output, sample metrics.Sample) string {
+	var sb strings.Builder
+	for _, label := range o.config.LabelSegregation {
+		if tag, exists := sample.GetTags().Get(label); exists {
+			if (sb.Len() > 0) {
+				sb.WriteString("_")
+				sb.WriteString(tag)
+			} else {
+				sb.WriteString(tag)
+			}
+		}
+	}
+	return sb.String()
 }

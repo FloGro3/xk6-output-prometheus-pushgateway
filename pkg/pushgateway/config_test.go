@@ -2,6 +2,7 @@ package pushgateway_test
 
 import (
 	"testing"
+	"slices"
 
 	"github.com/FloGro3/xk6-output-prometheus-pushgateway/pkg/pushgateway"
 	"github.com/sirupsen/logrus"
@@ -17,19 +18,19 @@ func TestConfigLabels(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unable to create a new config, error: %v", err)
 	}
-	if len(cfg.Labels) != 0 {
+	if len(cfg.LabelSegregation) != 1 {
 		t.Errorf("Unexpecten labels value %+v", cfg)
 	}
 
-	p.Environment["K6_LABEL_ENV"] = "PROD"
-	p.Environment["K6_LABEL_APP"] = "APP"
+	p.Environment["K6_LABEL_SEGREGATION"] = "PROD"
+	p.Environment["K6_LABEL_SEGREGATION"] = "APP"
 	cfg, err = pushgateway.NewConfig(p)
 	if err != nil {
 		t.Errorf("Unable to create a new config, error: %v", err)
 	}
-	if len(cfg.Labels) == 2 &&
-		cfg.Labels["app"] == "APP" &&
-		cfg.Labels["env"] == "PROD" {
+	if len(cfg.LabelSegregation) == 3 &&
+		slices.Contains(cfg.LabelSegregation, "APP") &&	
+		slices.Contains(cfg.LabelSegregation, "PROD") {
 		t.Errorf("Unexpecten labels value %+v", cfg)
 	}
 }

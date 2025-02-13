@@ -66,7 +66,7 @@ func TestResolveCounter(t *testing.T) {
 	}
 
 	// When
-	collectors := resolveCounter(sample, nil, "")
+	collectors := resolveCounter(sample, "", "")
 
 	// Then
 	if len(collectors) != 1 {
@@ -131,7 +131,7 @@ func TestResolveGauge(t *testing.T) {
 	}
 
 	// When
-	collectors := resolveGauge(sample, nil, "")
+	collectors := resolveGauge(sample, "", "")
 
 	// Then
 	if len(collectors) != 1 {
@@ -193,7 +193,7 @@ func TestResolveRate(t *testing.T) {
 	}
 
 	// When
-	collectors := resolveRate(sample, nil, "")
+	collectors := resolveRate(sample, "", "")
 
 	// Then
 	if len(collectors) != 1 {
@@ -258,7 +258,7 @@ func TestResolveTrend(t *testing.T) {
 	}
 
 	// When
-	collectors := resolveTrend(samples[0], nil, "")
+	collectors := resolveTrend(samples[0], "", "")
 
 	// Then
 	if len(collectors) != 6 {
