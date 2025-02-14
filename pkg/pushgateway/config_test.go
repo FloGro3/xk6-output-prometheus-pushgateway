@@ -22,8 +22,7 @@ func TestConfigLabels(t *testing.T) {
 		t.Errorf("Unexpecten labels value %+v", cfg)
 	}
 
-	p.Environment["K6_LABEL_SEGREGATION"] = "PROD"
-	p.Environment["K6_LABEL_SEGREGATION"] = "APP"
+	p.Environment["K6_LABEL_SEGREGATION"] = "PROD, APP"
 	cfg, err = pushgateway.NewConfig(p)
 	if err != nil {
 		t.Errorf("Unable to create a new config, error: %v", err)
