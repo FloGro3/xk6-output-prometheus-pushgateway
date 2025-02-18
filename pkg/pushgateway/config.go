@@ -73,8 +73,8 @@ func NewConfig(p output.Params) (Config, error) {
 		case "K6_JOB_NAME":
 			cfg.JobName = v
 		case "K6_LABEL_SEGREGATION":
-			trimmedValue := strings.TrimSpace(v)
-			parts := strings.Split(trimmedValue, ",")
+			cleanedValue := strings.ReplaceAll(v, " ", "")
+			parts := strings.Split(cleanedValue, ",")
 			for _, part := range parts {
 				cfg.LabelSegregation = append(cfg.LabelSegregation, strings.ToLower(part))
 			}
