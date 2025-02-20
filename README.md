@@ -3,11 +3,12 @@ xk6-output-prometheus-pushgateway
 This is a k6 extension for publishing test-run metrics to Prometheus via [Pushgateway](https://prometheus.io/docs/instrumenting/pushing/).\
 This extension is fully inspired by [xk6-output-prometheus-remote](https://github.com/grafana/xk6-output-prometheus-remote).\
 There might be a circumstance not to enable the "[Remote Write](https://prometheus.io/docs/practices/remote_write/)" feature on your Prometheus instance. In that case, the [Pushgateway](https://prometheus.io/docs/instrumenting/pushing/) and this extension are possibly be an alternative solution.
+The extension was optimized to work with distributed k6 tests using [k6 operator](https://github.com/grafana/k6-operator). The metrics can be aggregated later on in grafana for the same k6 jobs. 
 
 
 ## Usage
 ```sh
-% xk6 build --with github.com/martymarron/xk6-output-prometheus-pushgateway@latest
+% xk6 build --with github.com/FloGro3/xk6-output-prometheus-pushgateway@latest
 % K6_PUSHGATEWAY_URL=http://localhost:9091 \
 K6_JOB_NAME=k6_load_testing \
 ./k6 run \
@@ -15,36 +16,17 @@ K6_JOB_NAME=k6_load_testing \
 -o output-prometheus-pushgateway
 ```
 
-# Prometheus Labels
+# Label-Segregation
 
-It is possible to add Prometheus labels with external JSON dictionary in `js` script
+By default the reported metrics are splitted up by the scenario name which is exported as a tag by k6. This means the scenario name is injected into the metrics name. This makes it possible to filter metrics by scenarios. 
 
-```
-export const options = {
-  ext: {
-    "pushgateway": {
-      app: "myapp",
-      env: "myenv",
-    }
-  }
-};
-```
-
-or with environment variables
+Via
 
 ```
-K6_LABEL_APP=myapp K6_LABEL_ENV=myenv k6 run ...
+K6_LABEL_SEGREGATION="name, method"
 ```
 
-It is possible to check Prometheus labels with debug output. It looks like
-```
-DEBU[0000] Pushgateway labels from JSON options.ext.pushgateway dictionary map[app:MYAPP env:MYENV url:MYURL]
-DEBU[0000] Pushgateway labels map[app:MYAPP env:MYENV url:MYURL]
-```
-
-The 1st line is Prometheus labels from `options.ext.pushgateway` dictionary.
-
-The 2nd line is the final set of labels after merging `options.ext.pushgateway` dictionary and environment variables.
+additional splitting of metrics can be configured. For possible values check [K6 tags and groups](https://grafana.com/docs/k6/latest/using-k6/tags-and-groups/).
 
 # Metrics prefix
 
@@ -55,3 +37,13 @@ Configure it with the following environment variable:
 ```
 K6_PUSHGATEWAY_NAMESPACE=k6 k6 run ...
 ```
+
+# Configuration options
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| K6_PUSH_INTERVAL | `5` | Intervall in seconds for sending metrics to pushgateway |
+| K6_PUSHGATEWAY_URL | `"http://localhost:9091"` | URL of pushgateway to whitch the metrics are send |
+| K6_PUSHGATEWAY_NAMESPACE |  | Setting namespace of the metric |
+| K6_JOB_NAME | `"k6_load_testing"` | Sets a job tag as a grouping key for the metrcis send to pusgateway |
+| K6_LABEL_SEGREGATION | `"scenario"` | Defines labes by which the metrics are split up |
