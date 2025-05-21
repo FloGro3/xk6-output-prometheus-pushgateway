@@ -9,47 +9,44 @@ import (
 	"go.k6.io/k6/metrics"
 )
 
-// CollectorResolver is an interface to resolve the various types of the [metrics.Metric]
+// CollectorResolverSummary is an interface to resolve the various types of the [metrics.Metric]
 // to the [prometheus.Collector].
-// Metrics are grouped by labels which are included in [metrics.Metric] and configured 
-// via subsystem parameter.
 // Respective [k6 metric type] are solved by following the [conversion rule] which
 // the [xk6-output-prometheus-remote] extension applies.
 //
 // [k6 metric type]: https://k6.io/docs/using-k6/metrics/#metric-types
 // [conversion rule]: https://k6.io/blog/k6-loves-prometheus/#mapping-k6-metrics-types
 // [xk6-output-prometheus-remote]: https://github.com/grafana/xk6-output-prometheus-remote
-type CollectorResolver func(sample metrics.Sample, subsystem string, prefix string) []prometheus.Collector
+type CollectorResolverSummary func(sample metrics.Sample, prefix string) []prometheus.Collector
 
-// CreateResolver is a factory method to create the [ColloectorResolver] implementation
+// CollectorResolverSummary is a factory method to create the [ColloectorResolver] implementation
 // corresponding to the given [k6 metric type].
 //
 // Example use case:
 //
-//	collectorResolver := collector_resolver.CreateResolver(sample.Metric.Type)
-//	collectors := collectorResolver(sample.Metric, time.Now())
+//	collectorResolver := collector_resolver.CollectorResolverSummary(sample.Metric.Type)
+//	collectors := collectorResolverSummary(sample.Metric, time.Now())
 //
 // [k6 metric type]: https://k6.io/docs/using-k6/metrics/#metric-types
-func CreateResolver(t metrics.MetricType) CollectorResolver {
-	var resolver CollectorResolver
+func CreateResolverSummary(t metrics.MetricType) CollectorResolverSummary {
+	var resolver CollectorResolverSummary
 	switch t {
 	case metrics.Counter:
-		resolver = resolveCounter
+		resolver = resolveCounterSummary
 	case metrics.Gauge:
-		resolver = resolveGauge
+		resolver = resolveGaugeSummary
 	case metrics.Rate:
-		resolver = resolveRate
+		resolver = resolveRateSummary
 	case metrics.Trend:
-		resolver = resolveTrend
+		resolver = resolveTrendSummary
 	}
 	return resolver
 }
 
-func resolveCounter(sample metrics.Sample, subsystem string, prefix string) []prometheus.Collector {
+func resolveCounterSummary(sample metrics.Sample, prefix string) []prometheus.Collector {
 	counter := prometheus.NewCounterFunc(
 		prometheus.CounterOpts{
 			Namespace: 	prefix,
-			Subsystem: 	subsystem,
 			Name:      	sample.Metric.Name,
 		},
 		func() float64 {
@@ -60,11 +57,10 @@ func resolveCounter(sample metrics.Sample, subsystem string, prefix string) []pr
 	return []prometheus.Collector{counter}
 }
 
-func resolveGauge(sample metrics.Sample, subsystem string, prefix string) []prometheus.Collector {
+func resolveGaugeSummary(sample metrics.Sample, prefix string) []prometheus.Collector {
 	gauge := prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Namespace: 	prefix,
-			Subsystem: 	subsystem,
 			Name:      	sample.Metric.Name,
 		},
 		func() float64 {
@@ -74,11 +70,10 @@ func resolveGauge(sample metrics.Sample, subsystem string, prefix string) []prom
 	return []prometheus.Collector{gauge}
 }
 
-func resolveRate(sample metrics.Sample, subsystem string, prefix string) []prometheus.Collector {
+func resolveRateSummary(sample metrics.Sample, prefix string) []prometheus.Collector {
 	gauge := prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Namespace: 	prefix,
-			Subsystem: 	subsystem,
 			Name:      	sample.Metric.Name,
 		},
 		func() float64 {
@@ -88,7 +83,7 @@ func resolveRate(sample metrics.Sample, subsystem string, prefix string) []prome
 	return []prometheus.Collector{gauge}
 }
 
-func resolveTrend(sample metrics.Sample, subsystem string, prefix string) []prometheus.Collector {
+func resolveTrendSummary(sample metrics.Sample, prefix string) []prometheus.Collector {
 	sink := sample.Metric.Sink.Format(time.Duration(0))
 
 	collectors := make([]prometheus.Collector, 0)
@@ -101,7 +96,6 @@ func resolveTrend(sample metrics.Sample, subsystem string, prefix string) []prom
 		gauge := prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: 	prefix,
-				Subsystem: 	subsystem,
 				Name:      	name,
 			},
 		)
