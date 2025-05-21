@@ -47,7 +47,7 @@ func resolveCounterSummary(sample metrics.Sample, prefix string) []prometheus.Co
 	counter := prometheus.NewCounterFunc(
 		prometheus.CounterOpts{
 			Namespace: 	prefix,
-			Name:      	sample.Metric.Name,
+			Name:      	sample.Metric.Name + "_summary",
 		},
 		func() float64 {
 			counterSink := sample.Metric.Sink.(*metrics.CounterSink)
@@ -61,7 +61,7 @@ func resolveGaugeSummary(sample metrics.Sample, prefix string) []prometheus.Coll
 	gauge := prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Namespace: 	prefix,
-			Name:      	sample.Metric.Name,
+			Name:      	sample.Metric.Name + "_summary",
 		},
 		func() float64 {
 			return sample.Value
@@ -74,7 +74,7 @@ func resolveRateSummary(sample metrics.Sample, prefix string) []prometheus.Colle
 	gauge := prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Namespace: 	prefix,
-			Name:      	sample.Metric.Name,
+			Name:      	sample.Metric.Name + "_summary",
 		},
 		func() float64 {
 			return sample.Value
@@ -96,7 +96,7 @@ func resolveTrendSummary(sample metrics.Sample, prefix string) []prometheus.Coll
 		gauge := prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Namespace: 	prefix,
-				Name:      	name,
+				Name:      	name + "_summary",
 			},
 		)
 		gauge.Set(v)
