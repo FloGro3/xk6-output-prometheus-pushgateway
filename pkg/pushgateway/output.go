@@ -112,8 +112,10 @@ func convertk6SamplesToPromCollectors(o *Output, samples []metrics.Sample, prefi
 	collectors := make([]prometheus.Collector, 0)
 	for _, sample := range samples {
 		resolver := collector_resolver.CreateResolver(sample.Metric.Type)
+		resolverSummary := collector_resolver.CreateResolverSummary(sample.Metric.Type)
 		subsystem := getSubsystem(o, sample)
 		collectors = append(collectors, resolver(sample, subsystem, prefix)...)
+		collectors = append(collectors, resolverSummary(sample, prefix)...)
 	}
 	return collectors
 }
