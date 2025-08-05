@@ -5,6 +5,9 @@ This extension is fully inspired by [xk6-output-prometheus-remote](https://githu
 There might be a circumstance not to enable the "[Remote Write](https://prometheus.io/docs/practices/remote_write/)" feature on your Prometheus instance. In that case, the [Pushgateway](https://prometheus.io/docs/instrumenting/pushing/) and this extension are possibly be an alternative solution.
 The extension was optimized to work with distributed k6 tests using [k6 operator](https://github.com/grafana/k6-operator). The metrics can be aggregated later on in grafana for the same k6 jobs. 
 
+## Development commands
+- `go mod tidy` - Run this if versions have changed in the `go.mod` file to clean up unused dependencies.
+- `go test -cover ./...` - Executes tests and shows test coverage for all packages.
 
 ## Usage
 ```sh
